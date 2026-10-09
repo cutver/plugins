@@ -1,0 +1,84 @@
+name: End-to-end (real host)
+
+# Loads this repository's compiled plugin into a real `cutver` binary and
+# asserts the rendered changelog and repository state. This is the only check
+# that the wasm export `#[plugin_fn] pub fn invoke` still works through Extism;
+# the crate's unit tests call `render_invocation` directly and stay green even
+# if the export is renamed or removed.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# The job only builds and tests; it never writes to the repository.
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  e2e:
+    name: Test plugin through the real host
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plugins
+        uses: actions/checkout@v7
+
+      # Deliberate: clone cutver into the runner's temporary directory rather
+      # than this workspace. A nested checkout confuses Cargo's workspace
+      # resolution, and testing against cutver's current `main` is intentional:
+      # the plugin/host boundary is a shared contract, so this workflow should
+      # surface a host-side change underneath the plugin as early as possible.
+      - name: Clone cutver
+        run: git clone --depth 1 https://github.com/cutver/cutver.git "$RUNNER_TEMP/cutver"
+
+      # Both repositories pin the compiler in their own rust-toolchain.toml;
+      # read them instead of hardcoding a version that only exists in one repo.
+      - name: Read pinned toolchains
+        id: toolchain
+        run: |
+          plugin_channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)"
+          if [ -z "$plugin_channel" ]; then
+            echo "::error::rust-toolchain.toml does not pin a toolchain channel."
+            exit 1
+          fi
+
+          cutver_channel=""
+          cutver_toolchain="$RUNNER_TEMP/cutver/rust-toolchain.toml"
+          if [ -f "$cutver_toolchain" ]; then
+            cutver_channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' "$cutver_toolchain")"
+          fi
+          if [ -z "$cutver_channel" ]; then
+            echo "::notice::cutver has no rust-toolchain.toml; using the plugin pin $plugin_channel."
+            cutver_channel="$plugin_channel"
+          fi
+
+          echo "plugin=$plugin_channel" >> "$GITHUB_OUTPUT"
+          echo "cutver=$cutver_channel" >> "$GITHUB_OUTPUT"
+
+      - name: Install plugin toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.plugin }}
+          targets: wasm32-wasip1
+
+      - name: Install cutver toolchain
+        if: steps.toolchain.outputs.cutver != steps.toolchain.outputs.plugin
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.cutver }}
+
+      # Caching is intentionally omitted. The cache key cannot include cutver's
+      # freshly cloned Cargo.lock (it lives outside the workspace), and a key
+      # over the plugin alone would silently reuse a stale cutver build whenever
+      # the host changes. A wrong cache is worse than a cold build here.
+
+      - name: Build cutver with plugin support
+        working-directory: ${{ runner.temp }}/cutver
+        run: cargo build --features plugins
+
+      - name: Run end-to-end test
+        env:
+          CUTVER_BIN: ${{ runner.temp }}/cutver/target/debug/cutver
+        run: bash scripts/e2e.sh

@@ -3,10 +3,8 @@
 This repository is the official first-party plugin monorepo for
 [Cutver](https://github.com/cutver/cutver), the release automation CLI. Each
 plugin is a sandboxed [WebAssembly](https://webassembly.org/) module that
-extends Cutver with one capability, such as rendering release notes or reading
-an alternate manifest format. It is for Cutver users who need behavior the core
-binary does not ship, and for contributors who publish a plugin as a versioned
-`.wasm` artifact attached to a GitHub Release.
+extends Cutver with one capability and ships as a versioned `.wasm` artifact on
+a GitHub Release.
 
 ## Official plugins
 
@@ -32,8 +30,7 @@ operation Cutver calls and the data it passes.
 ### Example: notes from `github-releases`
 
 The plugin groups commits into fixed sections, credits contributors, and appends
-the compare link. Given a request with one feature and one fix, and no breaking
-changes:
+the compare link. Given a request with one feature and one fix:
 
 ```markdown
 ## Features
@@ -56,16 +53,12 @@ changes:
 **Full Changelog**: https://github.com/cutver/cutver/compare/v1.1.0...v1.2.0
 ```
 
-Sections with no entries are omitted, and the same request always renders the
-same bytes.
+Empty sections are omitted; the same request always renders the same bytes.
 
 ## Install a plugin
 
 Plugins are declared in `cutver.toml`. Each block points at a released `.wasm`
 artifact and pins its SHA-256 digest, so Cutver rejects a tampered download.
-
-The block below shows the shape you will use. Nothing is released yet, so those
-values go live once the `github-releases-v0.1.0` tag is pushed.
 
 ```toml
 [plugins.github-releases]
@@ -75,17 +68,12 @@ hash = "sha256:<digest>"
 capabilities = ["changelog.v1"]
 ```
 
-Replace `<digest>` with the value from the matching `.sha256` file attached to
-the same release. Because the plugin declares `changelog.v1`, Cutver routes
-release note rendering to it; no other configuration is required.
-
-CI builds the crate to `github_releases.wasm` (Cargo uses underscores) and
-uploads it as the `github-releases.wasm` asset, so the URL above is stable.
+Replace `<digest>` with the value from the matching `.sha256` sidecar. Because
+the plugin declares `changelog.v1`, Cutver routes release notes to it.
 
 ### Verify a release
 
-The `.sha256` sidecar holds the digest in the form Cutver expects. To check a
-download independently before installing it:
+Check a download against its `.sha256` sidecar before installing it:
 
 ```sh
 printf '%s  %s\n' "$(sed 's/^sha256://' github-releases.wasm.sha256)" \
@@ -121,7 +109,7 @@ sidecar to the GitHub Release.
 
 | Path | Contents |
 | --- | --- |
-| `.github/workflows/` | The shared release workflow. |
+| `.github/workflows/` | The shared release and end-to-end workflows. |
 | `plugins/` | One crate per plugin, added as workspace members. |
 | `Cargo.toml` | Workspace membership and shared package metadata. |
 | `rust-toolchain.toml` | Pinned channel and WebAssembly target. |
@@ -132,13 +120,25 @@ the plugins, and every third-party plugin.
 
 ## Why not just use GitHub's generated release notes?
 
-GitHub's `generate-notes` endpoint requires network access and a token, so it
-cannot run inside a sealed environment, and its output follows GitHub's own
-formatting. A Cutver changelog plugin runs sandboxed with no network and renders
-deterministically from the `ChangelogRenderRequest` that Cutver already
-supplies: the release version, tag, date, commit list, and contributors. The
-same input always produces the same notes, and a project controls grouping and
-formatting without granting the render step external access.
+GitHub's `generate-notes` endpoint needs network access and a token, so it
+cannot run inside a sealed environment. A Cutver changelog plugin runs
+sandboxed with no network and renders deterministically from the
+`ChangelogRenderRequest` Cutver supplies, so a project controls formatting
+without granting the render step external access.
+
+## Test against a real `cutver` binary
+
+`scripts/e2e.sh` builds the plugin, loads it into a `cutver` binary through
+Extism, and asserts the rendered changelog and bumped repository. It needs a
+plugin-capable binary, because the WASM engine is an optional feature:
+
+```sh
+cargo build --features plugins   # in a cutver checkout
+CUTVER_BIN=/path/to/cutver bash scripts/e2e.sh
+```
+
+An unset or non-executable `CUTVER_BIN` fails loudly; the test never skips.
+`.github/workflows/e2e.yml` runs it against cutver's current `main`.
 
 ## Requirements
 
