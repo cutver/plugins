@@ -1,0 +1,98 @@
+name: Plugin Release
+
+# One workflow serves every plugin in the workspace. The tag carries the plugin
+# name so a release builds exactly one crate.
+#   github-releases-v0.1.0  ->  plugins/github-releases
+on:
+  push:
+    tags:
+      - "*-v*.*.*"
+
+# The job only edits a GitHub Release; it needs no other scope.
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  WASM_TARGET: wasm32-wasip1
+
+jobs:
+  release:
+    name: Build and release plugin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Derive plugin from tag
+        id: plugin
+        run: |
+          tag="$GITHUB_REF_NAME"
+          plugin="$(sed -E 's/-v[0-9]+\.[0-9]+\.[0-9]+$//' <<< "$tag")"
+          version="${tag#"$plugin"-v}"
+
+          if [ -z "$plugin" ] || [ "$plugin" = "$tag" ]; then
+            echo "::error::Tag '$tag' does not match '<plugin>-v<major>.<minor>.<patch>'."
+            exit 1
+          fi
+
+          dir="plugins/$plugin"
+          if [ ! -d "$dir" ]; then
+            echo "::error::No plugin directory '$dir' for tag '$tag'. Add the workspace member before tagging a release."
+            exit 1
+          fi
+
+          echo "name=$plugin" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          # Cargo names the library target after the package with hyphens
+          # replaced by underscores, so `github-releases` builds
+          # `github_releases.wasm`.
+          echo "lib_name=${plugin//-/_}" >> "$GITHUB_OUTPUT"
+
+      # Install the pinned channel and the WebAssembly target explicitly; do not
+      # assume the target is present on the runner.
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ env.WASM_TARGET }}
+
+      - name: Confirm WebAssembly target
+        run: rustup target add "$WASM_TARGET"
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build plugin
+        run: cargo build --release --target "$WASM_TARGET" -p "${{ steps.plugin.outputs.name }}"
+
+      - name: Hash plugin artifact
+        id: checksum
+        run: |
+          wasm="target/$WASM_TARGET/release/${{ steps.plugin.outputs.lib_name }}.wasm"
+          if [ ! -f "$wasm" ]; then
+            echo "::error::Expected build output '$wasm' not found."
+            exit 1
+          fi
+
+          digest="$(sha256sum "$wasm" | awk '{print $1}')"
+          asset="${{ steps.plugin.outputs.name }}.wasm"
+          sidecar="$asset.sha256"
+
+          cp "$wasm" "$asset"
+          # The sidecar matches the value Cutver reads from the plugin block:
+          #   hash = "sha256:<digest>"
+          printf 'sha256:%s\n' "$digest" > "$sidecar"
+
+          echo "asset=$asset" >> "$GITHUB_OUTPUT"
+          echo "sidecar=$sidecar" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "${{ steps.checksum.outputs.asset }}" \
+            "${{ steps.checksum.outputs.sidecar }}" \
+            --title "${{ steps.plugin.outputs.name }} ${{ steps.plugin.outputs.version }}" \
+            --generate-notes

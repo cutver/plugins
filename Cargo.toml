@@ -1,0 +1,21 @@
+# Official Cutver plugins. Each plugin is a workspace member that compiles to a
+# sandboxed `wasm32-wasip1` binary and ships as a GitHub Release asset.
+[workspace]
+resolver = "2"
+members = ["crates/cutver-pdk", "plugins/github-releases"]
+
+# Shared metadata every plugin crate inherits via `workspace = true`.
+[workspace.package]
+edition = "2024"
+rust-version = "1.99.0"
+license = "MIT"
+repository = "https://github.com/cutver/plugins"
+
+# Tuned for WebAssembly size: plugins are small and the toolchain supports the
+# aggressive settings below.
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true
+panic = "abort"
+codegen-units = 1

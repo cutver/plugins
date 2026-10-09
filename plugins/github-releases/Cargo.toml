@@ -1,0 +1,23 @@
+# First official Cutver plugin: renders deterministic changelog notes for the
+# `changelog.v1` capability. The crate is both a `cdylib` (the wasm artifact
+# Extism loads) and an `rlib` so the integration test can drive the public
+# rendering path through a normal Rust function call.
+[package]
+name = "github-releases"
+version = "0.1.0"
+description = "Cutver plugin that renders deterministic changelog notes."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cutver-pdk = { path = "../../crates/cutver-pdk" }
+# No default features: the sandboxed plugin must not carry the HTTP stack.
+extism-pdk = { version = "1.4.1", default-features = false }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"

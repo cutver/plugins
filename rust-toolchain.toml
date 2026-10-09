@@ -1,0 +1,5 @@
+# Pin the compiler channel and the WebAssembly target so contributors and CI
+# build the same artifact.
+[toolchain]
+channel = "stable"
+targets = ["wasm32-wasip1"]
