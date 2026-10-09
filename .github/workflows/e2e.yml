@@ -9,6 +9,10 @@ on:
   pull_request:
   push:
     branches: [main]
+  # This test's outcome depends on another repository's default branch, so it can
+  # go red for a reason that has nothing to do with a change here. Re-running it
+  # should not require inventing a commit.
+  workflow_dispatch:
 
 # The job only builds and tests; it never writes to the repository.
 permissions:
