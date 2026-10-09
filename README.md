@@ -10,7 +10,7 @@ a GitHub Release.
 
 | Plugin | Capability | Status |
 | --- | --- | --- |
-| `github-releases` | `changelog.v1` | Awaiting first release |
+| `github-releases` | `changelog.v1` | Available, v0.1.0 |
 
 The list grows as plugins ship. A plugin declares exactly the capabilities it
 implements, so Cutver can route work without hardcoding plugin names.
@@ -64,12 +64,11 @@ artifact and pins its SHA-256 digest, so Cutver rejects a tampered download.
 [plugins.github-releases]
 runtime = "wasm"
 source = "https://github.com/cutver/plugins/releases/download/github-releases-v0.1.0/github-releases.wasm"
-hash = "sha256:<digest>"
+hash = "sha256:a828cbabd247afdaf78fec358ae5a27271097c7c2ef6fc9ec0fe04af22edf841"
 capabilities = ["changelog.v1"]
 ```
 
-Replace `<digest>` with the value from the matching `.sha256` sidecar. Because
-the plugin declares `changelog.v1`, Cutver routes release notes to it.
+This plugin needs a Cutver newer than `v0.11.0`: the invocation contract changed.
 
 ### Verify a release
 
