@@ -2,7 +2,7 @@
 # sandboxed `wasm32-wasip1` binary and ships as a GitHub Release asset.
 [workspace]
 resolver = "2"
-members = ["crates/cutver-pdk", "plugins/github-releases"]
+members = ["plugins/github-releases"]
 
 # Shared metadata every plugin crate inherits via `workspace = true`.
 [workspace.package]

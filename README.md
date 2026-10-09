@@ -119,10 +119,13 @@ sidecar to the GitHub Release.
 | Path | Contents |
 | --- | --- |
 | `.github/workflows/` | The shared release workflow. |
-| `crates/cutver-pdk/` | Shared wire-contract DTOs used by every plugin. |
 | `plugins/` | One crate per plugin, added as workspace members. |
 | `Cargo.toml` | Workspace membership and shared package metadata. |
 | `rust-toolchain.toml` | Pinned channel and WebAssembly target. |
+
+Plugin crates depend on the published [`cutver-pdk`](https://crates.io/crates/cutver-pdk)
+crate for the shared wire contract, so the DTOs are defined once for Cutver,
+the plugins, and every third-party plugin.
 
 ## Why not just use GitHub's generated release notes?
 

@@ -35,6 +35,8 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 [[package]]
 name = "cutver-pdk"
 version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d048b7fca6f07d6d0fe2a5cb374d32b3a307b3b75cbb7b0a2f13158a6af0f9c5"
 dependencies = [
  "serde",
  "serde_json",

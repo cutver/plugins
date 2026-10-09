@@ -5,8 +5,8 @@
 //! same request always produces the same bytes.
 
 use cutver_pdk::{
-    CAPABILITY_CHANGELOG_V1, ChangelogRenderRequest, ChangelogRenderResponse, OPERATION_RENDER,
-    PluginCommitEntry, PluginContributor, PluginInvocation,
+    Capability, ChangelogRenderRequest, ChangelogRenderResponse, PluginCommitEntry,
+    PluginContributor, PluginInvocation, PluginOperation,
 };
 use extism_pdk::{FnResult, plugin_fn};
 use thiserror::Error;
@@ -189,14 +189,14 @@ pub fn render_invocation(input: &str) -> Result<String, PluginError> {
     let invocation: PluginInvocation =
         serde_json::from_str(input).map_err(PluginError::Envelope)?;
 
-    if invocation.capability != CAPABILITY_CHANGELOG_V1 {
+    if invocation.capability != Capability::ChangelogV1 {
         return Err(PluginError::UnsupportedCapability {
-            capability: invocation.capability,
+            capability: invocation.capability.as_str().to_string(),
         });
     }
-    if invocation.operation != OPERATION_RENDER {
+    if invocation.operation != PluginOperation::Render {
         return Err(PluginError::UnsupportedOperation {
-            operation: invocation.operation,
+            operation: invocation.operation.as_str().to_string(),
         });
     }
 
@@ -375,17 +375,38 @@ mod tests {
     }
 
     #[test]
+    fn unrecognised_wire_values_report_envelope_errors() {
+        // The published envelope fields are typed enums, so a value outside the
+        // capability/operation domain no longer decodes. This used to surface
+        // as `UnsupportedCapability`/`UnsupportedOperation`; it now fails at the
+        // envelope boundary, and a bogus value must not panic.
+        let capability = r#"{"capability":"not-a-capability","operation":"render","payload":{}}"#;
+        assert!(matches!(
+            render_invocation(capability),
+            Err(PluginError::Envelope(_))
+        ));
+        let operation =
+            r#"{"capability":"changelog.v1","operation":"not-an-operation","payload":{}}"#;
+        assert!(matches!(
+            render_invocation(operation),
+            Err(PluginError::Envelope(_))
+        ));
+    }
+
+    #[test]
     fn rejects_invalid_invocations() {
         assert!(matches!(
             render_invocation("not json"),
             Err(PluginError::Envelope(_))
         ));
+        // Valid-but-unsupported values: the typed envelope decodes these, so
+        // the plugin's own capability/operation checks are what reject them.
         let capability = r#"{"capability":"manifest.v1","operation":"render","payload":{}}"#;
         assert!(matches!(
             render_invocation(capability),
             Err(PluginError::UnsupportedCapability { .. })
         ));
-        let operation = r#"{"capability":"changelog.v1","operation":"write","payload":{}}"#;
+        let operation = r#"{"capability":"changelog.v1","operation":"compute","payload":{}}"#;
         assert!(matches!(
             render_invocation(operation),
             Err(PluginError::UnsupportedOperation { .. })

@@ -15,7 +15,7 @@ repository.workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cutver-pdk = { path = "../../crates/cutver-pdk" }
+cutver-pdk = "0.1.0"
 # No default features: the sandboxed plugin must not carry the HTTP stack.
 extism-pdk = { version = "1.4.1", default-features = false }
 serde = { version = "1", features = ["derive"] }
