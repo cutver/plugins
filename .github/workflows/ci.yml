@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Build and test only; this workflow never writes to the repository.
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  WASM_TARGET: wasm32-wasip1
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Report every platform's result rather than cancelling the rest on the
+      # first failure: a Windows-only break is exactly the case worth seeing in
+      # full.
+      fail-fast: false
+      matrix:
+        # Windows is in the matrix deliberately. Line endings and path separators
+        # are the only platform-specific risks this workspace carries, and both
+        # are Windows concerns. A CRLF checkout already broke the core
+        # repository's CI by feeding a carriage return into a byte comparison, and
+        # this repository had the same latent defect with nothing to catch it.
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        # Every step below uses POSIX shell, including on Windows, so the
+        # toolchain-reading step behaves identically on both platforms.
+        shell: bash
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      # Read the compiler release from rust-toolchain.toml rather than repeating it
+      # here. That file is also what local builds use, and the registry digest
+      # depends on them agreeing.
+      - name: Read pinned toolchain
+        id: toolchain
+        run: |
+          channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)"
+          if [ -z "$channel" ]; then
+            echo "::error::rust-toolchain.toml does not pin a toolchain channel."
+            exit 1
+          fi
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.channel }}
+          targets: ${{ env.WASM_TARGET }}
+
+      # Formatting is platform independent, so one platform is enough.
+      - name: Format
+        if: matrix.os == 'ubuntu-latest'
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      # Cargo.lock is tracked in this repository because these crates produce
+      # binaries, so `--locked` also guards against a lockfile that no longer
+      # matches the manifests.
+      - name: Test
+        run: cargo test --locked --workspace
+
+      # The release workflow assumes this artifact builds. Prove it on every
+      # change rather than discovering it at tag time, and build the whole
+      # workspace so a newly added plugin is covered without editing this file.
+      - name: Build the WebAssembly artifacts
+        run: cargo build --locked --release --target "$WASM_TARGET" --workspace

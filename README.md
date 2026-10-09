@@ -109,7 +109,7 @@ sidecar to the GitHub Release.
 
 | Path | Contents |
 | --- | --- |
-| `.github/workflows/` | The shared release and end-to-end workflows. |
+| `.github/workflows/` | The shared CI, release and end-to-end workflows. |
 | `plugins/` | One crate per plugin, added as workspace members. |
 | `Cargo.toml` | Workspace membership and shared package metadata. |
 | `rust-toolchain.toml` | Pinned channel and WebAssembly target. |
