@@ -57,13 +57,18 @@ jobs:
         with:
           toolchain: ${{ steps.toolchain.outputs.channel }}
           targets: ${{ env.WASM_TARGET }}
+          # An explicitly named toolchain installs the minimal profile, so rustfmt
+          # and clippy have to be requested or the format and lint steps fail with
+          # "not installed for the toolchain".
+          components: rustfmt, clippy
 
-      # Formatting is platform independent, so one platform is enough.
+      # Formatting and linting are platform independent, so one platform is enough.
       - name: Format
         if: matrix.os == 'ubuntu-latest'
         run: cargo fmt --all -- --check
 
       - name: Clippy
+        if: matrix.os == 'ubuntu-latest'
         run: cargo clippy --workspace --all-targets -- -D warnings
 
       # Cargo.lock is tracked in this repository because these crates produce
