@@ -1,5 +1,7 @@
-# Pin the compiler channel and the WebAssembly target so contributors and CI
-# build the same artifact.
+# Pin an exact compiler release, not a channel. Each published `.wasm` is pinned
+# by a SHA-256 in the registry, so a rebuild has to produce the same bytes; a
+# floating `stable` channel would silently change the binary over time and make
+# every recorded digest irreproducible.
 [toolchain]
-channel = "stable"
+channel = "1.99.0"
 targets = ["wasm32-wasip1"]

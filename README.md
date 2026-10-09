@@ -12,7 +12,7 @@ binary does not ship, and for contributors who publish a plugin as a versioned
 
 | Plugin | Capability | Status |
 | --- | --- | --- |
-| `github-releases` | `changelog.v1` | Available |
+| `github-releases` | `changelog.v1` | Awaiting first release |
 
 The list grows as plugins ship. A plugin declares exactly the capabilities it
 implements, so Cutver can route work without hardcoding plugin names.
@@ -63,6 +63,9 @@ same bytes.
 
 Plugins are declared in `cutver.toml`. Each block points at a released `.wasm`
 artifact and pins its SHA-256 digest, so Cutver rejects a tampered download.
+
+The block below shows the shape you will use. Nothing is released yet, so those
+values go live once the `github-releases-v0.1.0` tag is pushed.
 
 ```toml
 [plugins.github-releases]
@@ -139,8 +142,7 @@ formatting without granting the render step external access.
 
 ## Requirements
 
-- Rust toolchain version 1.99.0 or newer.
-- The `wasm32-wasip1` compilation target.
+- Rust 1.99.0 and `wasm32-wasip1`, both pinned in the toolchain file.
 - Cutver with plugin support enabled.
 
 ## License

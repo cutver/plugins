@@ -50,15 +50,24 @@ jobs:
           # `github_releases.wasm`.
           echo "lib_name=${plugin//-/_}" >> "$GITHUB_OUTPUT"
 
-      # Install the pinned channel and the WebAssembly target explicitly; do not
-      # assume the target is present on the runner.
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ env.WASM_TARGET }}
+      # Read the compiler release from rust-toolchain.toml rather than repeating it
+      # here: that file is also what local builds use, and the registry digest
+      # depends on both agreeing.
+      - name: Read pinned toolchain
+        id: toolchain
+        run: |
+          channel="$(sed -n 's/^channel = "\(.*\)"/\1/p' rust-toolchain.toml)"
+          if [ -z "$channel" ]; then
+            echo "::error::rust-toolchain.toml does not pin a toolchain channel."
+            exit 1
+          fi
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
 
-      - name: Confirm WebAssembly target
-        run: rustup target add "$WASM_TARGET"
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.channel }}
+          targets: ${{ env.WASM_TARGET }}
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
