@@ -17,5 +17,11 @@ fn renders_the_canonical_fixture_exactly() {
     let response: ChangelogRenderResponse =
         serde_json::from_str(&response_json).expect("response decodes");
 
-    assert_eq!(response.body, EXPECTED_NOTES);
+    // The renderer emits LF. A checkout on a platform with `core.autocrlf` enabled
+    // can hand us CRLF for the fixture, and `.gitattributes` marks the fixtures
+    // `-text` to prevent that — but a tree checked out before the attribute landed
+    // would still fail on git configuration rather than on the render.
+    let expected = EXPECTED_NOTES.replace("\r\n", "\n");
+
+    assert_eq!(response.body, expected);
 }

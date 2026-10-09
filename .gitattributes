@@ -1,0 +1,4 @@
+# These fixtures are byte-significant. `tests/render.rs` compares the rendered
+# release notes against `changelog_notes_expected.md` byte for byte, and the
+# renderer always emits LF, so git must not rewrite line endings on checkout.
+plugins/github-releases/tests/fixtures -text
