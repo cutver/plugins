@@ -8,6 +8,16 @@ use cutver_pdk::{
     Capability, ChangelogRenderRequest, ChangelogRenderResponse, PluginCommitEntry,
     PluginContributor, PluginInvocation, PluginOperation,
 };
+// The PDK symbols (`alloc`, `input_length`, `output_set`, ...) are imports that only
+// the Extism runtime provides, so the exported entry point exists on WebAssembly and
+// nowhere else. On a native target the link would fail: MSVC requires every symbol to
+// be resolved, while ELF tolerates unresolved ones in a shared library, which is why
+// building this crate natively only breaks on Windows.
+//
+// `render_invocation` stays target-independent so the behaviour can be tested natively,
+// and the cross-repository end-to-end test is what proves the compiled wasm actually
+// exports `invoke`.
+#[cfg(target_arch = "wasm32")]
 use extism_pdk::{FnResult, plugin_fn};
 use thiserror::Error;
 
@@ -210,10 +220,14 @@ pub fn render_invocation(input: &str) -> Result<String, PluginError> {
 
 /// The plugin's single exported entry point.
 ///
+/// Only compiled for WebAssembly: see the import comment above for why a native
+/// build cannot link it.
+///
 /// # Errors
 ///
 /// Returns the [`PluginError`] from [`render_invocation`] as the plugin error
 /// return; it never panics.
+#[cfg(target_arch = "wasm32")]
 #[plugin_fn]
 pub fn invoke(input: String) -> FnResult<String> {
     render_invocation(&input).map_err(Into::into)
