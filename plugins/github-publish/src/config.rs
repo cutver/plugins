@@ -12,9 +12,11 @@ where
 {
     let mut config = PublishConfig::default();
 
-    // 1. Try reading cutver.toml in root_dir if available
+    // 1. Try reading cutver.toml in root_dir if available, or fallback to current dir
     let cutver_toml_path = Path::new(root_dir).join("cutver.toml");
-    if let Ok(content) = std::fs::read_to_string(&cutver_toml_path)
+    let content_opt = std::fs::read_to_string(&cutver_toml_path)
+        .or_else(|_| std::fs::read_to_string("cutver.toml"));
+    if let Ok(content) = content_opt
         && let Ok(toml_val) = content.parse::<toml::Table>()
         && let Some(plugins_table) = toml_val.get("plugins").and_then(|v| v.as_table())
         && let Some(plugin_table) = plugins_table

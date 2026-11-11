@@ -3,7 +3,7 @@
 # and GitHub release creation, changelog extraction, and asset upload in `on_post_release`.
 [package]
 name = "github-publish"
-version = "0.1.0"
+version = "0.1.1"
 description = "Cutver plugin that publishes releases and assets to GitHub."
 edition.workspace = true
 rust-version.workspace = true

@@ -73,24 +73,6 @@ impl GitHubClient for ExtismGitHubClient {
 
         let status = res.status_code();
         if status == 200 {
-            let body_bytes = res.body();
-            if let Ok(json_val) = serde_json::from_slice::<serde_json::Value>(&body_bytes) {
-                if let Some(perms) = json_val.get("permissions") {
-                    let has_push = perms.get("push").and_then(|v| v.as_bool()).unwrap_or(false);
-                    let has_admin = perms
-                        .get("admin")
-                        .and_then(|v| v.as_bool())
-                        .unwrap_or(false);
-                    if !has_push && !has_admin {
-                        return Err(PluginError::GitHubApi {
-                            status,
-                            endpoint: url,
-                            message: "Token does not have push/write permission to repository"
-                                .to_string(),
-                        });
-                    }
-                }
-            }
             Ok(())
         } else {
             let msg = String::from_utf8_lossy(&res.body()).to_string();

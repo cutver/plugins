@@ -64,7 +64,9 @@ where
 
     // 3. Extract or generate release notes
     let changelog_full_path = Path::new(&payload.root_dir).join(&config.changelog_path);
-    let extracted_notes = if let Ok(bytes) = read_file(&changelog_full_path) {
+    let extracted_notes = if let Ok(bytes) =
+        read_file(&changelog_full_path).or_else(|_| read_file(Path::new(&config.changelog_path)))
+    {
         if let Ok(content) = String::from_utf8(bytes) {
             extract_release_notes(&content, &payload.version)
         } else {
@@ -157,7 +159,7 @@ where
 
 fn resolve_asset_path(root_dir: &str, pattern: &str) -> PathBuf {
     let direct = PathBuf::from(pattern);
-    if direct.is_absolute() {
+    if direct.is_file() || direct.is_absolute() {
         direct
     } else {
         Path::new(root_dir).join(pattern)
