@@ -11,6 +11,7 @@ a GitHub Release.
 | Plugin | Capability | Status |
 | --- | --- | --- |
 | `github-releases` | `changelog.v1` | Available, v0.1.0 |
+| `github-publish` | `lifecycle.v1` | Available, v0.1.0 |
 
 The list grows as plugins ship. A plugin declares exactly the capabilities it
 implements, so Cutver can route work without hardcoding plugin names.
@@ -53,7 +54,29 @@ the compare link. Given a request with one feature and one fix:
 **Full Changelog**: https://github.com/cutver/cutver/compare/v1.1.0...v1.2.0
 ```
 
-Empty sections are omitted; the same request always renders the same bytes.
+### Example: publish with `github-publish`
+
+The plugin verifies token and repository access during preflight (`on_pre_bump`) to
+prevent tag collisions, and creates the GitHub Release with notes and assets during
+`on_post_release`:
+
+```toml
+[plugins.github-publish]
+runtime = "wasm"
+source = "https://github.com/cutver/plugins/releases/download/github-publish-v0.1.0/github-publish.wasm"
+hash = "sha256:<digest>"
+capabilities = ["lifecycle.v1"]
+events = ["on_pre_bump", "on_post_release"]
+
+[plugins.github-publish.permissions]
+network = ["api.github.com", "uploads.github.com"]
+env = ["GITHUB_TOKEN"]
+filesystem = ["CHANGELOG.md", "dist"]
+
+[plugins.github-publish.config]
+assets = ["dist/*.tar.gz", "dist/*.zip"]
+checksums = true
+```
 
 ## Install a plugin
 
