@@ -112,7 +112,6 @@ fn end_to_end_pre_bump_and_post_release_lifecycle() {
     assert_eq!(repo, "cutver/cutver");
     assert_eq!(req.tag_name, "v0.2.0");
     assert_eq!(req.name, "v0.2.0");
-    assert_eq!(req.target_commitish, "f00ba41234567890");
     assert!(
         req.body
             .contains("Added official github-publish plugin (#50)")

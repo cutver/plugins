@@ -91,9 +91,11 @@ where
         .prerelease
         .unwrap_or_else(|| is_prerelease(&payload.version));
 
+    let target_commitish = config.target_commitish.clone();
+
     let release_req = CreateReleaseRequest {
         tag_name: payload.tag_name.clone(),
-        target_commitish: payload.commit_sha.clone(),
+        target_commitish,
         name: title,
         body,
         draft: config.draft,
@@ -235,7 +237,6 @@ mod tests {
         let (repo_slug, req) = &releases[0];
         assert_eq!(repo_slug, "cutver/plugins");
         assert_eq!(req.name, "v0.2.0");
-        assert_eq!(req.target_commitish, "c0ffee1234567890");
         assert_eq!(req.body, "### Added\n- Support plugins");
         assert!(!req.prerelease);
 

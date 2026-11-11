@@ -311,7 +311,7 @@ mod tests {
 
         let req = CreateReleaseRequest {
             tag_name: "v0.2.0".to_string(),
-            target_commitish: "abcdef1".to_string(),
+            target_commitish: Some("abcdef1".to_string()),
             name: "v0.2.0".to_string(),
             body: "Notes".to_string(),
             draft: false,

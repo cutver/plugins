@@ -36,7 +36,9 @@ pub struct CreateReleaseRequest {
     /// Tag name to target or create (e.g. `"v1.2.0"`).
     pub tag_name: String,
     /// Specifies the commitish value that determines where the Git tag is created from.
-    pub target_commitish: String,
+    /// Can be any branch or commit SHA. Unused if the Git tag already exists.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub target_commitish: Option<String>,
     /// The name of the release.
     pub name: String,
     /// Text describing the contents of the tag.
@@ -115,6 +117,10 @@ pub struct PublishConfig {
     /// Discussion category name to create release discussion.
     #[serde(default)]
     pub discussion_category_name: Option<String>,
+
+    /// Target commitish (branch name or commit SHA). Defaults to None (repository default branch).
+    #[serde(default)]
+    pub target_commitish: Option<String>,
 }
 
 impl Default for PublishConfig {
@@ -129,6 +135,7 @@ impl Default for PublishConfig {
             changelog_path: default_changelog_path(),
             title_template: default_title_template(),
             discussion_category_name: None,
+            target_commitish: None,
         }
     }
 }
