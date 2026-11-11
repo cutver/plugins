@@ -324,8 +324,8 @@ mod tests {
         let repo = Repository::parse("cutver/plugins").unwrap();
 
         assert!(mock.check_repository_access(&repo).is_ok());
-        assert_eq!(mock.tag_exists(&repo, "v0.1.0").unwrap(), true);
-        assert_eq!(mock.tag_exists(&repo, "v0.2.0").unwrap(), false);
+        assert!(mock.tag_exists(&repo, "v0.1.0").unwrap());
+        assert!(!mock.tag_exists(&repo, "v0.2.0").unwrap());
 
         let req = CreateReleaseRequest {
             tag_name: "v0.2.0".to_string(),

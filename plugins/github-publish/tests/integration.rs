@@ -121,8 +121,8 @@ fn end_to_end_pre_bump_and_post_release_lifecycle() {
         req.body
             .contains("Fixed preflight verification on Windows MSVC")
     );
-    assert_eq!(req.draft, false);
-    assert_eq!(req.prerelease, false);
+    assert!(!req.draft);
+    assert!(!req.prerelease);
 
     // Verify assets uploaded: 2 binaries + 1 checksums.txt
     let uploaded = mock.uploaded_assets.lock().unwrap();
@@ -166,7 +166,7 @@ fn pre_bump_collision_stops_release() {
     .unwrap();
 
     let res: PreBumpResponse = serde_json::from_str(&res_str).unwrap();
-    assert_eq!(res.allow, false);
+    assert!(!res.allow);
     assert!(res.reason.unwrap().contains("already exists on remote"));
 }
 

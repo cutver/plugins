@@ -235,7 +235,7 @@ mod tests {
         assert_eq!(req.name, "v0.2.0");
         assert_eq!(req.target_commitish, "c0ffee1234567890");
         assert_eq!(req.body, "### Added\n- Support plugins");
-        assert_eq!(req.prerelease, false);
+        assert!(!req.prerelease);
 
         // Verify uploaded assets (app.tar.gz and checksums.txt)
         let assets = mock.uploaded_assets.lock().unwrap();
@@ -265,6 +265,6 @@ mod tests {
         .unwrap();
 
         let releases = mock.created_releases.lock().unwrap();
-        assert_eq!(releases[0].1.prerelease, true);
+        assert!(releases[0].1.prerelease);
     }
 }

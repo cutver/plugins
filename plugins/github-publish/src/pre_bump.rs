@@ -122,7 +122,7 @@ mod tests {
         let mock = MockGitHubClient::new();
 
         let res = handle_pre_bump(&payload, &config, None, &mock).unwrap();
-        assert_eq!(res.allow, false);
+        assert!(!res.allow);
         assert!(res.reason.unwrap().contains("Missing GitHub token"));
     }
 
@@ -133,7 +133,7 @@ mod tests {
         let mock = MockGitHubClient::new();
 
         let res = handle_pre_bump(&payload, &config, Some("   "), &mock).unwrap();
-        assert_eq!(res.allow, false);
+        assert!(!res.allow);
         assert!(res.reason.unwrap().contains("Missing GitHub token"));
     }
 
@@ -144,7 +144,7 @@ mod tests {
         let mock = MockGitHubClient::new();
 
         let res = handle_pre_bump(&payload, &config, Some("token_123"), &mock).unwrap();
-        assert_eq!(res.allow, false);
+        assert!(!res.allow);
         assert!(res.reason.unwrap().contains("Missing GitHub repository"));
     }
 
@@ -155,7 +155,7 @@ mod tests {
         let mock = MockGitHubClient::new();
 
         let res = handle_pre_bump(&payload, &config, Some("token_123"), &mock).unwrap();
-        assert_eq!(res.allow, false);
+        assert!(!res.allow);
         assert!(res.reason.unwrap().contains("Invalid repository slug"));
     }
 
@@ -167,7 +167,7 @@ mod tests {
         mock.allow_access = false;
 
         let res = handle_pre_bump(&payload, &config, Some("token_123"), &mock).unwrap();
-        assert_eq!(res.allow, false);
+        assert!(!res.allow);
         assert!(
             res.reason
                 .unwrap()
@@ -182,7 +182,7 @@ mod tests {
         let mock = MockGitHubClient::new().with_tag("v0.2.0");
 
         let res = handle_pre_bump(&payload, &config, Some("token_123"), &mock).unwrap();
-        assert_eq!(res.allow, false);
+        assert!(!res.allow);
         assert!(
             res.reason
                 .unwrap()
@@ -197,7 +197,7 @@ mod tests {
         let mock = MockGitHubClient::new().with_tag("v0.1.0");
 
         let res = handle_pre_bump(&payload, &config, Some("token_123"), &mock).unwrap();
-        assert_eq!(res.allow, true);
+        assert!(res.allow);
         assert_eq!(res.reason, None);
     }
 }

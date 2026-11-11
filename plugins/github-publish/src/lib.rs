@@ -190,7 +190,7 @@ mod tests {
         .unwrap();
 
         let resp: cutver_pdk::PreBumpResponse = serde_json::from_str(&response_json).unwrap();
-        assert_eq!(resp.allow, true);
+        assert!(resp.allow);
         assert_eq!(resp.reason, None);
     }
 

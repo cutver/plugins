@@ -79,7 +79,7 @@ mod tests {
         let config = load_config(".", |_| None).unwrap();
         assert_eq!(config.repository, None);
         assert!(config.assets.is_empty());
-        assert_eq!(config.draft, false);
+        assert!(!config.draft);
         assert_eq!(config.changelog_path, "CHANGELOG.md");
     }
 
@@ -101,7 +101,7 @@ mod tests {
 
         assert_eq!(config.repository.as_deref(), Some("cutver/plugins"));
         assert_eq!(config.assets, vec!["dist/app.tar.gz", "dist/app.zip"]);
-        assert_eq!(config.draft, true);
+        assert!(config.draft);
         assert_eq!(config.checksums, Some(true));
     }
 }
