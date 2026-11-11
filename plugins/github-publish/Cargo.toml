@@ -1,0 +1,23 @@
+# Official Cutver plugin: publishes releases and assets to GitHub.
+# Supports preflight token validation and tag collision prevention in `on_pre_bump`,
+# and GitHub release creation, changelog extraction, and asset upload in `on_post_release`.
+[package]
+name = "github-publish"
+version = "0.1.0"
+description = "Cutver plugin that publishes releases and assets to GitHub."
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+cutver-pdk = "0.1.0"
+extism-pdk = { version = "1.4.1", default-features = false, features = ["http"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.8"
+thiserror = "2"
+sha2 = "0.10"
