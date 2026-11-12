@@ -52,7 +52,7 @@ where
                     }
                 })?;
 
-            let cfg = config::load_config(&payload.root_dir, &env_lookup)?;
+            let cfg = config::load_config(&payload.root_dir, &env_lookup, &read_file)?;
             let response = pre_bump::handle_pre_bump(&payload, &cfg, token, client)?;
             serde_json::to_string(&response).map_err(PluginError::Response)
         }
@@ -65,7 +65,7 @@ where
                     }
                 })?;
 
-            let cfg = config::load_config(&payload.root_dir, &env_lookup)?;
+            let cfg = config::load_config(&payload.root_dir, &env_lookup, &read_file)?;
             handle_post_release_and_format(&payload, &cfg, token, client, read_file)
         }
         other => Err(PluginError::UnsupportedOperation {

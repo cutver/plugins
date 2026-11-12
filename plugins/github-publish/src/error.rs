@@ -67,7 +67,43 @@ pub enum PluginError {
     )]
     MissingReleaseNotes,
 
-    /// Configuration error.
-    #[error("configuration error: {0}")]
-    Config(String),
+    /// The configuration file exists but could not be read or decoded.
+    #[error("failed to read `{path}`: {reason}; fix the file or its permissions before releasing")]
+    ConfigUnreadable { path: String, reason: String },
+
+    /// The configuration file is not valid TOML.
+    #[error(
+        "`{path}` is not valid TOML: {source}; fix the syntax before Cutver reads the configuration"
+    )]
+    ConfigParse {
+        path: String,
+        #[source]
+        source: toml::de::Error,
+    },
+
+    /// A configuration key has the wrong TOML shape.
+    #[error(
+        "`{key}` in `{path}` must be a table: write `[plugins.github-publish.config]` followed by `key = value` lines"
+    )]
+    ConfigShape { path: String, key: String },
+
+    /// The configuration block is valid TOML but not a valid plugin configuration.
+    #[error(
+        "`[plugins.github-publish.config]` in `{path}` is invalid: {source}; compare each key with the plugin README"
+    )]
+    ConfigInvalid {
+        path: String,
+        #[source]
+        source: toml::de::Error,
+    },
+
+    /// The configuration uses a key this plugin version no longer supports.
+    #[error(
+        "`plugins.github-publish.config.{key}` in `{path}` is no longer supported: {remedy}; remove the key from the plugin configuration"
+    )]
+    ConfigKeyRemoved {
+        path: String,
+        key: String,
+        remedy: String,
+    },
 }

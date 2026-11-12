@@ -4,7 +4,7 @@
 # `on_post_release`.
 [package]
 name = "github-publish"
-version = "0.2.0"
+version = "0.2.1"
 description = "Cutver plugin that publishes releases and assets to GitHub."
 edition.workspace = true
 rust-version.workspace = true

@@ -1,5 +1,6 @@
 use cutver_pdk::PreBumpResponse;
 use github_publish::client::MockGitHubClient;
+use github_publish::error::PluginError;
 use github_publish::invoke_with;
 use github_publish::types::ReleaseResponse;
 use std::collections::HashMap;
@@ -191,6 +192,110 @@ fn dry_run_skips_mutating_api_calls() {
     .unwrap();
 
     assert_eq!(res_str, "{}");
+    assert_eq!(mock.created_releases.lock().unwrap().len(), 0);
+    assert_eq!(mock.uploaded_assets.lock().unwrap().len(), 0);
+}
+
+#[test]
+fn broken_plugin_config_aborts_before_any_api_call() {
+    // GITHUB_REPOSITORY refills `repository` whenever the config block is
+    // silently discarded, which used to turn a typo into a live release.
+    let mock = MockGitHubClient::new();
+    let mut envs = HashMap::new();
+    envs.insert("GITHUB_REPOSITORY".to_string(), "cutver/cutver".to_string());
+
+    let envelope = serde_json::json!({
+        "capability": "lifecycle.v1",
+        "operation": "on_post_release",
+        "payload": {
+            "root_dir": ".",
+            "version": "0.2.0",
+            "tag_name": "v0.2.0",
+            "commit_sha": "f00ba41234567890",
+            "dry_run": false,
+            "notes": "## v0.2.0\n\n- Rendered by the host",
+        }
+    })
+    .to_string();
+
+    let read_file = |path: &Path| -> Result<Vec<u8>, std::io::Error> {
+        let name = path.to_string_lossy();
+        if name.ends_with("cutver.toml") {
+            Ok(b"[plugins.github-publish.config]\nchecksum = true\n".to_vec())
+        } else {
+            Ok(b"asset bytes".to_vec())
+        }
+    };
+
+    let err = invoke_with(
+        &envelope,
+        Some("gho_test_token_123"),
+        &mock,
+        |k| envs.get(k).cloned(),
+        read_file,
+    )
+    .unwrap_err();
+
+    assert!(
+        matches!(err, PluginError::ConfigInvalid { .. }),
+        "expected ConfigInvalid, got: {err}"
+    );
+    assert!(
+        err.to_string().contains("checksum"),
+        "error must name the offending key: {err}"
+    );
+    assert_eq!(mock.created_releases.lock().unwrap().len(), 0);
+    assert_eq!(mock.uploaded_assets.lock().unwrap().len(), 0);
+}
+
+#[test]
+fn broken_plugin_config_aborts_pre_bump_before_any_api_call() {
+    // GITHUB_REPOSITORY supplies a repository slug, so a silently ignored config
+    // would let the preflight pass and the release go out asset-less.
+    let mock = MockGitHubClient::new();
+    let mut envs = HashMap::new();
+    envs.insert("GITHUB_REPOSITORY".to_string(), "cutver/cutver".to_string());
+
+    let envelope = serde_json::json!({
+        "capability": "lifecycle.v1",
+        "operation": "on_pre_bump",
+        "payload": {
+            "root_dir": ".",
+            "current_version": "0.1.0",
+            "next_version": "0.2.0",
+            "bump_level": "minor",
+            "tag_name": "v0.2.0",
+            "dry_run": false
+        }
+    })
+    .to_string();
+
+    let read_file = |path: &Path| -> Result<Vec<u8>, std::io::Error> {
+        let name = path.to_string_lossy();
+        if name.ends_with("cutver.toml") {
+            Ok(b"[plugins.github-publish.config]\nchangelog_path = \"CHANGELOG.md\"\n".to_vec())
+        } else {
+            Ok(b"asset bytes".to_vec())
+        }
+    };
+
+    let err = invoke_with(
+        &envelope,
+        Some("gho_test_token_123"),
+        &mock,
+        |k| envs.get(k).cloned(),
+        read_file,
+    )
+    .unwrap_err();
+
+    assert!(
+        matches!(err, PluginError::ConfigKeyRemoved { .. }),
+        "expected ConfigKeyRemoved, got: {err}"
+    );
+    assert!(
+        err.to_string().contains("[changelog] path"),
+        "error must point at the migration target: {err}"
+    );
     assert_eq!(mock.created_releases.lock().unwrap().len(), 0);
     assert_eq!(mock.uploaded_assets.lock().unwrap().len(), 0);
 }

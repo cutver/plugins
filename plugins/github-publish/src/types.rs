@@ -78,7 +78,11 @@ pub struct AssetFile {
 }
 
 /// Structured configuration for `github-publish`.
+///
+/// Unknown keys are rejected: a misspelled key silently falling back to its
+/// default is how a fail-closed release pipeline publishes the wrong thing.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PublishConfig {
     /// GitHub repository slug (`"owner/repo"`). If omitted, read from `GITHUB_REPOSITORY`.
     #[serde(default)]
