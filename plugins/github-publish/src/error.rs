@@ -61,6 +61,12 @@ pub enum PluginError {
     #[error("HTTP request to `{url}` failed: {reason}")]
     Http { url: String, reason: String },
 
+    /// The host did not supply the rendered release entry.
+    #[error(
+        "missing release notes: the host supplied no rendered changelog entry for this release; declare `[changelog] path` in cutver.toml so Cutver can render it, or set `generate_release_notes = true` to let GitHub generate the body"
+    )]
+    MissingReleaseNotes,
+
     /// Configuration error.
     #[error("configuration error: {0}")]
     Config(String),

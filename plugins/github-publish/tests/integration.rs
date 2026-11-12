@@ -45,27 +45,12 @@ fn end_to_end_pre_bump_and_post_release_lifecycle() {
     assert!(pre_res.allow, "preflight check must allow bump");
     assert_eq!(pre_res.reason, None);
 
-    // 2. Phase 2: Post-release execution
-    let changelog_fixture = r#"# Changelog
-
-## [0.2.0] - 2026-11-11
-
-### Features
-- Added official github-publish plugin (#50)
-- Sandboxed asset upload with automatic checksums
-
-### Bug Fixes
-- Fixed preflight verification on Windows MSVC
-
-## [0.1.0] - 2026-10-01
-- Initial version
-"#;
-
+    // 2. Phase 2: Post-release execution.
+    //    `notes` is the entry Cutver already rendered from the project's changelog
+    //    template: the plugin publishes it verbatim and never reads the working tree.
     let fs_mock = move |p: &Path| -> Result<Vec<u8>, std::io::Error> {
         let path_str = p.to_string_lossy();
-        if path_str.contains("CHANGELOG.md") {
-            Ok(changelog_fixture.as_bytes().to_vec())
-        } else if path_str.contains("x86_64") {
+        if path_str.contains("x86_64") {
             Ok(b"x86_64 binary bytes".to_vec())
         } else if path_str.contains("aarch64") {
             Ok(b"aarch64 binary bytes".to_vec())
@@ -77,7 +62,9 @@ fn end_to_end_pre_bump_and_post_release_lifecycle() {
         }
     };
 
-    let post_release_envelope = r#"{
+    let rendered_notes = "## v0.2.0\n\n### Features\n- Added official github-publish plugin (#50)\n- Sandboxed asset upload with automatic checksums\n\n### Bug Fixes\n- Fixed preflight verification on Windows MSVC";
+
+    let post_release_envelope = serde_json::json!({
         "capability": "lifecycle.v1",
         "operation": "on_post_release",
         "payload": {
@@ -85,12 +72,14 @@ fn end_to_end_pre_bump_and_post_release_lifecycle() {
             "version": "0.2.0",
             "tag_name": "v0.2.0",
             "commit_sha": "f00ba41234567890",
-            "dry_run": false
+            "dry_run": false,
+            "notes": rendered_notes,
         }
-    }"#;
+    })
+    .to_string();
 
     let post_res_str = invoke_with(
-        post_release_envelope,
+        &post_release_envelope,
         Some("gho_test_token_123"),
         &mock,
         env_lookup,
@@ -112,6 +101,11 @@ fn end_to_end_pre_bump_and_post_release_lifecycle() {
     assert_eq!(repo, "cutver/cutver");
     assert_eq!(req.tag_name, "v0.2.0");
     assert_eq!(req.name, "v0.2.0");
+    assert!(
+        req.body.starts_with("## v0.2.0"),
+        "body must be the rendered entry verbatim, heading included: {}",
+        req.body
+    );
     assert!(
         req.body
             .contains("Added official github-publish plugin (#50)")

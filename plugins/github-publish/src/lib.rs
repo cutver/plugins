@@ -3,7 +3,6 @@
 //! Implements `lifecycle.v1` for `on_pre_bump` (fail-safe preflight verification)
 //! and `on_post_release` (release creation and asset upload engine).
 
-pub mod changelog;
 pub mod checksum;
 pub mod client;
 pub mod config;
@@ -204,7 +203,8 @@ mod tests {
                 "version": "0.2.0",
                 "tag_name": "v0.2.0",
                 "commit_sha": "abcdef1234567890",
-                "dry_run": false
+                "dry_run": false,
+                "notes": "Rendered entry from the host"
             }
         }"#;
 

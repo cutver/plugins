@@ -57,12 +57,6 @@ where
             Some(chk_env.trim().eq_ignore_ascii_case("true") || chk_env.trim() == "1");
     }
 
-    if let Some(changelog_env) = env_lookup("GITHUB_PUBLISH_CHANGELOG")
-        && !changelog_env.trim().is_empty()
-    {
-        config.changelog_path = changelog_env.trim().to_string();
-    }
-
     if let Some(title_env) = env_lookup("GITHUB_PUBLISH_TITLE")
         && !title_env.trim().is_empty()
     {
@@ -82,7 +76,6 @@ mod tests {
         assert_eq!(config.repository, None);
         assert!(config.assets.is_empty());
         assert!(!config.draft);
-        assert_eq!(config.changelog_path, "CHANGELOG.md");
     }
 
     #[test]

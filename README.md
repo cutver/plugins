@@ -57,13 +57,13 @@ the compare link. Given a request with one feature and one fix:
 ### Example: publish with `github-publish`
 
 The plugin verifies token and repository access during preflight (`on_pre_bump`) to
-prevent tag collisions, and creates the GitHub Release with notes and assets during
-`on_post_release`:
+prevent tag collisions, and creates the GitHub Release with the notes Cutver
+rendered plus its assets during `on_post_release`:
 
 ```toml
 [plugins.github-publish]
 runtime = "wasm"
-source = "https://github.com/cutver/plugins/releases/download/github-publish-v0.1.0/github-publish.wasm"
+source = "https://github.com/cutver/plugins/releases/download/github-publish-v0.2.0/github-publish.wasm"
 hash = "sha256:<digest>"
 capabilities = ["lifecycle.v1"]
 events = ["on_pre_bump", "on_post_release"]
@@ -71,7 +71,7 @@ events = ["on_pre_bump", "on_post_release"]
 [plugins.github-publish.permissions]
 network = ["api.github.com", "uploads.github.com"]
 env = ["GITHUB_TOKEN"]
-filesystem = ["CHANGELOG.md", "dist"]
+filesystem = ["dist"]
 
 [plugins.github-publish.config]
 assets = ["dist/*.tar.gz", "dist/*.zip"]

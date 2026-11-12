@@ -1,6 +1,6 @@
 # github-publish (Cutver Plugin)
 
-Official Cutver plugin that automates GitHub release creation, release note extraction, and asset publishing.
+Official Cutver plugin that automates GitHub release creation from the notes Cutver already rendered, plus release asset publishing.
 Built on the sandboxed `wasm32-wasip1` runtime via Extism and `cutver-pdk`.
 
 ## Features
@@ -8,9 +8,10 @@ Built on the sandboxed `wasm32-wasip1` runtime via Extism and `cutver-pdk`.
 - **Preflight Verification (`on_pre_bump`)**:
   - Validates `GITHUB_TOKEN` presence and repository write access.
   - Checks if the release tag (`v{version}`) already exists on GitHub to prevent duplicate tags or failed releases after local mutations.
-- **Smart Release Notes (`on_post_release`)**:
-  - Automatically parses and extracts the release section for the current version from `CHANGELOG.md` (Keep a Changelog format).
-  - Falls back to GitHub's auto-generated release notes API if changelog is not provided.
+- **Release Notes from the Host (`on_post_release`)**:
+  - Publishes the `notes` entry Cutver rendered from the project's changelog template, verbatim and heading included. The plugin never re-reads the working tree, so what the changelog says is exactly what the release says.
+  - Fails closed with an explicit error when the host supplies no entry, instead of inventing a placeholder body. Cutver only renders an entry when `cutver.toml` declares `[changelog] path`.
+  - `generate_release_notes = true` asks GitHub to generate the body from pull requests instead, for projects that keep no changelog. Requires `cutver-pdk` 0.1.1 or newer.
 - **SemVer Prerelease Detection**:
   - Automatically identifies prerelease tags (e.g. `1.0.0-rc.1`, `0.2.0-beta`) and sets `prerelease = true`.
 - **Release Asset Uploads with Checksums**:
@@ -28,7 +29,7 @@ Add the plugin to `cutver.toml`:
 ```toml
 [plugins.github-publish]
 runtime = "wasm"
-source = "https://github.com/cutver/plugins/releases/download/github-publish-v0.1.0/github-publish.wasm"
+source = "https://github.com/cutver/plugins/releases/download/github-publish-v0.2.0/github-publish.wasm"
 hash = "sha256:<sha256_digest>"
 capabilities = ["lifecycle.v1"]
 events = ["on_pre_bump", "on_post_release"]
@@ -36,7 +37,7 @@ events = ["on_pre_bump", "on_post_release"]
 [plugins.github-publish.permissions]
 network = ["api.github.com", "uploads.github.com"]
 env = ["GITHUB_TOKEN"]
-filesystem = ["CHANGELOG.md", "dist"]
+filesystem = ["dist"]
 
 [plugins.github-publish.config]
 # GitHub repository slug. If omitted, read from GITHUB_REPOSITORY environment variable.
@@ -54,11 +55,9 @@ draft = false
 # Override prerelease flag (default: auto-detected from version string)
 # prerelease = false
 
-# Fallback to GitHub's auto-generated release notes when changelog body is empty (default: false)
+# Let GitHub generate the release body from pull requests when Cutver supplies no
+# rendered entry (default: false)
 generate_release_notes = false
-
-# Path to changelog file relative to workspace root (default: "CHANGELOG.md")
-changelog_path = "CHANGELOG.md"
 
 # Release title template (default: "{tag}")
 title_template = "Release {version}"
@@ -81,7 +80,6 @@ The plugin can also read configuration from standard CI environment variables de
 | `GITHUB_PUBLISH_CHECKSUMS` | Set to `"true"` or `"false"`. |
 | `GITHUB_PUBLISH_DRAFT` | Set to `"true"` or `"false"`. |
 | `GITHUB_PUBLISH_TITLE` | Release title template. |
-| `GITHUB_PUBLISH_CHANGELOG` | Relative path to changelog file. |
 
 ---
 

@@ -101,13 +101,10 @@ pub struct PublishConfig {
     #[serde(default)]
     pub prerelease: Option<bool>,
 
-    /// Fallback to GitHub's auto-generated release notes when changelog body is empty.
+    /// Let GitHub generate the release body from the repository's pull requests.
+    /// Only used when the host supplies no rendered entry; it never overrides one.
     #[serde(default)]
     pub generate_release_notes: bool,
-
-    /// Path to changelog file relative to workspace root. Defaults to `"CHANGELOG.md"`.
-    #[serde(default = "default_changelog_path")]
-    pub changelog_path: String,
 
     /// Release title template (e.g. `"{tag}"` or `"Release {version}"`).
     /// Defaults to `"{tag}"`.
@@ -132,16 +129,11 @@ impl Default for PublishConfig {
             draft: false,
             prerelease: None,
             generate_release_notes: false,
-            changelog_path: default_changelog_path(),
             title_template: default_title_template(),
             discussion_category_name: None,
             target_commitish: None,
         }
     }
-}
-
-fn default_changelog_path() -> String {
-    "CHANGELOG.md".to_string()
 }
 
 fn default_title_template() -> String {
